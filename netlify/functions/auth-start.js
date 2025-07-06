@@ -1,3 +1,7 @@
+# =============================================================================
+# FILE: netlify/functions/auth-start.js
+# =============================================================================
+
 const crypto = require('crypto');
 
 // This function initiates the Microsoft OAuth flow
