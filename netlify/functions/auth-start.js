@@ -1,4 +1,5 @@
-// netlify/functions/auth-start.js
+const crypto = require('crypto');
+
 // This function initiates the Microsoft OAuth flow
 exports.handler = async (event, context) => {
   const headers = {
@@ -56,28 +57,14 @@ exports.handler = async (event, context) => {
 
 // Helper functions
 function generateCodeVerifier() {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return base64URLEncode(array);
+  return crypto.randomBytes(32).toString('base64url');
 }
 
 async function generateCodeChallenge(verifier) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(verifier);
-  const digest = await crypto.subtle.digest('SHA-256', data);
-  return base64URLEncode(new Uint8Array(digest));
-}
-
-function base64URLEncode(array) {
-  return btoa(String.fromCharCode.apply(null, array))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
+  const hash = crypto.createHash('sha256').update(verifier).digest();
+  return hash.toString('base64url');
 }
 
 function generateState() {
-  const array = new Uint8Array(16);
-  crypto.getRandomValues(array);
-  return base64URLEncode(array);
+  return crypto.randomBytes(16).toString('base64url');
 }
-
