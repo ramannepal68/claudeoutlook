@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microsoft OAuth with Netlify</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background-color: #0078d4;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .btn:hover {
+            background-color: #106ebe;
+        }
+        .token-display {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Microsoft OAuth with Netlify Functions</h1>
+        
+        <div id="status"></div>
+        
+        <div id="login-section">
+            <h2>Step 1: Login with Microsoft</h2>
+            <button class="btn" onclick="startAuth()">Login with Microsoft</button>
+        </div>
+        
+        <div id="tokens-section" style="display: none;">
+            <h2>Tokens Retrieved</h2>
+            <div>
+                <h3>Access Token:</h3>
+                <div id="access-token" class="token-display"></div>
+            </div>
+            <div>
+                <h3>Refresh Token:</h3>
+                <div id="refresh-token" class="token-display"></div>
+            </div>
+            <button class="btn" onclick="refreshTokens()">Refresh Tokens</button>
+        </div>
+    </div>
+
+    <script>
+        // Check if we already have tokens stored
+        window.onload = function() {
+            const accessToken = localStorage.getItem('microsoft_access_token');
+            const refreshToken = localStorage.getItem('microsoft_refresh_token');
+            
+            if (accessToken && refreshToken) {
+                displayTokens(accessToken, refreshToken);
+            }
+        };
+
+        async function startAuth() {
+            try {
+                showStatus('Initiating OAuth flow...', 'info');
+                
+                // Call the auth-start function
+                const response = await fetch('/.netlify/functions/auth-start');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Store code verifier for later use
+                    localStorage.setItem('code_verifier', data.codeVerifier);
+                    localStorage.setItem('oauth_state', data.state);
+                    
+                    // Redirect to Microsoft OAuth
+                    window.location.href = data.authUrl;
+                } else {
+                    showStatus('Error starting OAuth: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function refreshTokens() {
+            try {
+                showStatus('Refreshing tokens...', 'info');
+                
+                const refreshToken = localStorage.getItem('microsoft_refresh_token');
+                
+                if (!refreshToken) {
+                    showStatus('No refresh token available', 'error');
+                    return;
+                }
+
+                const response = await fetch('/.netlify/functions/refresh-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        refresh_token: refreshToken
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Update stored tokens
+                    localStorage.setItem('microsoft_access_token', data.access_token);
+                    if (data.refresh_token) {
+                        localStorage.setItem('microsoft_refresh_token', data.refresh_token);
+                    }
+                    
+                    displayTokens(data.access_token, data.refresh_token || refreshToken);
+                    showStatus('Tokens refreshed successfully!', 'success');
+                } else {
+                    showStatus('Error refreshing tokens: ' + data.error, 'error');
+                }
+            } catch (error) {
+                showStatus('Error: ' + error.message, 'error');
+            }
+        }
+
+        function displayTokens(accessToken, refreshToken) {
+            document.getElementById('access-token').textContent = accessToken;
+            document.getElementById('refresh-token').textContent = refreshToken;
+            document.getElementById('tokens-section').style.display = 'block';
+            document.getElementById('login-section').style.display = 'none';
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            
+            // Clear status after 5 seconds
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = '';
+            }, 5000);
+        }
+
+        // Handle URL parameters on page load (for callback handling)
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+        
+        if (code) {
+            // We're being redirected back from Microsoft
+            const codeVerifier = localStorage.getItem('code_verifier');
+            const storedState = localStorage.getItem('oauth_state');
+            
+            if (codeVerifier && state === storedState) {
+                // Redirect to callback function with code verifier
+                window.location.href = `/.netlify/functions/auth-callback?code=${code}&state=${state}&code_verifier=${codeVerifier}`;
+            } else {
+                showStatus('Invalid state parameter or missing code verifier', 'error');
+            }
+        }
+    </script>
+</body>
+</html>
