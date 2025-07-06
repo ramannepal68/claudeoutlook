@@ -1,0 +1,27 @@
+# netlify.toml
+[build]
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# .env file (add to your Netlify environment variables)
+# MICROSOFT_CLIENT_ID=your_microsoft_client_id_here
+
+# package.json (if you need additional dependencies)
+{
+  "name": "microsoft-oauth-netlify",
+  "version": "1.0.0",
+  "description": "Microsoft OAuth with Netlify Functions",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "scripts": {
+    "dev": "netlify dev"
+  }
+}
