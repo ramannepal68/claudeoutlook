@@ -1,0 +1,11 @@
+{
+  "name": "microsoft-oauth-netlify",
+  "version": "1.0.0",
+  "description": "Microsoft OAuth with Netlify Functions",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "scripts": {
+    "dev": "netlify dev"
+  }
+}
