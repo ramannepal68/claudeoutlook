@@ -3,84 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Microsoft Login Example</title>
-    <script src="https://alcdn.msauth.net/browser/2.30.0/js/msal-browser.min.js"></script>
+    <title>Microsoft OAuth Refresh Token</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-    <button onclick="handleLogin()">Login with Microsoft</button>
-    <div id="tokenDisplay"></div>
-    <script>
-        const msalConfig = {
-            auth: {
-                clientId: "48001125-599a-489d-8ead-ce1802cc93f8", // Replace with your client ID
-                authority: "https://login.microsoftonline.com/common", // Use 'common' for multi-tenant apps
-                redirectUri: "https://claudeoutlook.netlify.app" // Replace with your redirect URI
-            },
-            cache: {
-                cacheLocation: "localStorage", // This configures where your cache will be stored
-                storeAuthStateInCookie: false, // Set to true for Internet Explorer 11
-            }
-        };
+    <h1>Microsoft OAuth Refresh Token</h1>
+    
+    <button id="loginButton">Login with Microsoft</button>
+    
+    <div id="results" class="hidden">
+        <h2>Authentication Results</h2>
+        <h3>Access Token:</h3>
+        <pre id="accessToken"></pre>
+        <h3>Refresh Token:</h3>
+        <pre id="refreshToken"></pre>
+        <h3>User Info:</h3>
+        <pre id="userInfo"></pre>
+    </div>
 
-        const msalInstance = new msal.PublicClientApplication(msalConfig);
-
-        function handleLogin() {
-            msalInstance.loginRedirect({
-                scopes: ["user.read", "offline_access"],
-                prompt: "consent" // Prompt for consent to ensure refresh token is issued
-            });
-        }
-
-        function handleRedirectPromise() {
-            return msalInstance.handleRedirectPromise().then(response => {
-                if (response !== null) {
-                    console.log("id_token acquired at: " + new Date().toString());
-                    console.log(response);
-
-                    // Check if the response contains a refresh token
-                    if (response.refreshToken) {
-                        console.log("Refresh Token: " + response.refreshToken);
-                        displayToken("Refresh Token: " + response.refreshToken);
-                    } else {
-                        console.log("No refresh token found in the response.");
-                    }
-
-                    // Call the Graph API or other services using the access token
-                } else {
-                    console.log("No response object found");
-                }
-            }).catch(error => {
-                console.error("Error handling redirect:", error);
-            });
-        }
-
-        function displayToken(token) {
-            const tokenDisplay = document.getElementById('tokenDisplay');
-            tokenDisplay.innerHTML = `<p>${token}</p>`;
-        }
-
-        function acquireTokenSilent() {
-            const accounts = msalInstance.getAllAccounts();
-            if (accounts.length > 0) {
-                const account = accounts[0];
-                msalInstance.acquireTokenSilent({
-                    scopes: ["user.read"],
-                    account: account
-                }).then(response => {
-                    console.log("Access token acquired silently:", response.accessToken);
-                    // Use the new access token
-                }).catch(error => {
-                    console.error("Error acquiring token silently:", error);
-                    // Fallback to interactive login if silent token acquisition fails
-                    msalInstance.acquireTokenRedirect({
-                        scopes: ["user.read"]
-                    });
-                });
-            }
-        }
-
-        // Call this function when your app loads
-        handleRedirectPromise();
-    </script>
+    <script src="auth.js"></script>
 </body>
 </html>
