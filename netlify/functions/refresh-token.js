@@ -1,4 +1,7 @@
-// netlify/functions/refresh-token.js
+# =============================================================================
+# FILE: netlify/functions/refresh-token.js
+# =============================================================================
+
 // This function refreshes the access token using the refresh token
 exports.handler = async (event, context) => {
   const headers = {
