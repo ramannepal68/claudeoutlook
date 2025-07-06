@@ -1,4 +1,7 @@
-// netlify/functions/auth-callback.js
+# =============================================================================
+# FILE: netlify/functions/auth-callback.js
+# =============================================================================
+
 // This function handles the OAuth callback and exchanges code for tokens
 exports.handler = async (event, context) => {
   const headers = {
@@ -12,7 +15,20 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { code, state } = event.queryStringParameters;
+    let code, state, codeVerifier;
+    
+    // Handle both GET (query params) and POST (JSON body) requests
+    if (event.httpMethod === 'GET') {
+      const params = event.queryStringParameters || {};
+      code = params.code;
+      state = params.state;
+      codeVerifier = params.code_verifier;
+    } else if (event.httpMethod === 'POST') {
+      const body = JSON.parse(event.body || '{}');
+      code = body.code;
+      state = body.state;
+      codeVerifier = body.code_verifier;
+    }
     
     if (!code) {
       return {
@@ -21,13 +37,6 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({ error: 'No authorization code provided' })
       };
     }
-
-    // In a real app, you'd verify the state parameter here
-    // For this demo, we'll skip state verification
-    
-    // Get code verifier from query params or request body
-    // In production, retrieve from secure session store
-    const codeVerifier = event.queryStringParameters.code_verifier;
     
     if (!codeVerifier) {
       return {
@@ -65,32 +74,51 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Return tokens (in production, handle these securely)
-    return {
-      statusCode: 200,
-      headers: {
-        ...headers,
-        'Content-Type': 'text/html'
-      },
-      body: `
-        <html>
-          <body>
-            <h2>Authentication Successful!</h2>
-            <p>Refresh Token: <code>${tokenData.refresh_token}</code></p>
-            <p>Access Token: <code>${tokenData.access_token}</code></p>
-            <p>Expires in: ${tokenData.expires_in} seconds</p>
-            <script>
-              // Store tokens securely (this is just for demo)
-              localStorage.setItem('microsoft_refresh_token', '${tokenData.refresh_token}');
-              localStorage.setItem('microsoft_access_token', '${tokenData.access_token}');
-              
-              // Optionally redirect back to your app
-              // window.location.href = '/';
-            </script>
-          </body>
-        </html>
-      `
-    };
+    // Return tokens as JSON for POST requests, HTML for GET requests
+    if (event.httpMethod === 'POST') {
+      return {
+        statusCode: 200,
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          expires_in: tokenData.expires_in,
+          token_type: tokenData.token_type
+        })
+      };
+    } else {
+      // Return HTML for GET requests (fallback)
+      return {
+        statusCode: 200,
+        headers: {
+          ...headers,
+          'Content-Type': 'text/html'
+        },
+        body: `
+          <html>
+            <body>
+              <h2>Authentication Successful!</h2>
+              <p>Refresh Token: <code>${tokenData.refresh_token}</code></p>
+              <p>Access Token: <code>${tokenData.access_token}</code></p>
+              <p>Expires in: ${tokenData.expires_in} seconds</p>
+              <script>
+                // Store tokens securely (this is just for demo)
+                localStorage.setItem('microsoft_refresh_token', '${tokenData.refresh_token}');
+                localStorage.setItem('microsoft_access_token', '${tokenData.access_token}');
+                
+                // Redirect back to main page
+                setTimeout(() => {
+                  window.location.href = '/';
+                }, 3000);
+              </script>
+            </body>
+          </html>
+        `
+      };
+    }
   } catch (error) {
     return {
       statusCode: 500,
