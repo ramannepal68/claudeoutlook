@@ -1,11 +1,27 @@
+# =============================================================================
+# FILE: package.json
+# =============================================================================
+
 {
   "name": "microsoft-oauth-netlify",
   "version": "1.0.0",
-  "description": "Microsoft OAuth with Netlify Functions",
-  "dependencies": {
-    "node-fetch": "^3.3.2"
-  },
+  "description": "Microsoft OAuth with Netlify Functions - Get Refresh Tokens",
+  "main": "index.html",
   "scripts": {
-    "dev": "netlify dev"
+    "dev": "netlify dev",
+    "build": "echo 'No build step required'"
+  },
+  "keywords": [
+    "microsoft",
+    "oauth",
+    "netlify",
+    "refresh-token",
+    "azure"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
   }
 }
