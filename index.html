@@ -8,6 +8,7 @@
 </head>
 <body>
     <button onclick="handleLogin()">Login with Microsoft</button>
+    <div id="tokenDisplay"></div>
     <script>
         const msalConfig = {
             auth: {
@@ -38,7 +39,9 @@
                     // Check if the response contains a refresh token
                     if (response.refreshToken) {
                         console.log("Refresh Token: " + response.refreshToken);
-                        // Store the refresh token securely
+                        displayToken("Refresh Token: " + response.refreshToken);
+                    } else {
+                        console.log("No refresh token found in the response.");
                     }
 
                     // Call the Graph API or other services using the access token
@@ -48,6 +51,11 @@
             }).catch(error => {
                 console.error("Error handling redirect:", error);
             });
+        }
+
+        function displayToken(token) {
+            const tokenDisplay = document.getElementById('tokenDisplay');
+            tokenDisplay.innerHTML = `<p>${token}</p>`;
         }
 
         function acquireTokenSilent() {
